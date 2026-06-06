@@ -1,0 +1,31 @@
+# Entorno virtual
+.venv/
+venv/
+env/
+
+# Credenciales — NUNCA subir al repo
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Distribución / build
+dist/
+build/
+*.egg-info/
+
+# IDEs
+.vscode/
+.idea/
+*.iml
+
+# Flet build output
+build/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
