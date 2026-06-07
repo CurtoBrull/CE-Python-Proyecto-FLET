@@ -1,4 +1,3 @@
-import base64
 import csv
 import io
 from datetime import date
@@ -131,10 +130,35 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
             pass
 
         if not en_escritorio:
-            # Web: descarga via data URI en el navegador
-            b64 = base64.b64encode(_generar_csv().encode("utf-8")).decode()
-            pag.launch_url(f"data:text/csv;base64,{b64}")
-            msg_export.value = f"Descargando {nombre}..."
+            # Web: mostrar CSV en diálogo para copiar
+            contenido = _generar_csv()
+            dialogo = ft.AlertDialog(
+                title=ft.Text(f"Exportar — {nombre}"),
+                content=ft.Column(
+                    controls=[
+                        ft.Text("Copia el contenido y pégalo en un fichero .csv:", size=13),
+                        ft.TextField(
+                            value=contenido,
+                            multiline=True,
+                            read_only=True,
+                            min_lines=10,
+                            max_lines=15,
+                            width=600,
+                        ),
+                    ],
+                    tight=True,
+                    spacing=8,
+                ),
+                actions=[ft.Button("Cerrar", on_click=lambda e: cerrar_dialogo())],
+            )
+
+            def cerrar_dialogo():
+                dialogo.open = False
+                pag.update()
+
+            pag.overlay.append(dialogo)
+            dialogo.open = True
+            msg_export.value = ""
 
         pag.update()
 
