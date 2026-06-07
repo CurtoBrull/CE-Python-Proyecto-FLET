@@ -26,24 +26,35 @@ def init_db() -> None:
                 );
             """)
 
+
 def insert(tran: Transaccion) -> int:
     """Inserta una nueva transacción en la base de datos y devuelve su ID."""
     with _connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("""
+            cur.execute(
+                """
                 INSERT INTO transacciones (tipo, importe, categoria, descripcion, fecha)
                 VALUES (%s, %s, %s, %s, %s) 
                 RETURNING id;
-                """, 
-                (tran.tipo.value, tran.importe, tran.categoria.value, tran.descripcion, tran.fecha)
+                """,
+                (
+                    tran.tipo.value,
+                    tran.importe,
+                    tran.categoria.value,
+                    tran.descripcion,
+                    tran.fecha,
+                ),
             )
             return cur.fetchone()[0]
-        
+
+
 def get_all() -> list[Transaccion]:
     """Recupera todas las transacciones de la base de datos."""
     with _connect() as conn:
         with conn.cursor() as cur:
-            cur.execute("SELECT id, tipo, importe, categoria, descripcion, fecha FROM transacciones ORDER BY fecha DESC;")
+            cur.execute(
+                "SELECT id, tipo, importe, categoria, descripcion, fecha FROM transacciones ORDER BY fecha DESC;"
+            )
             rows = cur.fetchall()
             return [
                 Transaccion(
@@ -52,10 +63,12 @@ def get_all() -> list[Transaccion]:
                     importe=float(row[2]),
                     categoria=Categoria(row[3]),
                     descripcion=row[4],
-                    fecha=row[5]
-                ) for row in rows
+                    fecha=row[5],
+                )
+                for row in rows
             ]
-            
+
+
 def delete(tran_id: int) -> None:
     """Elimina una transacción de la base de datos por su ID."""
     with _connect() as conn:
