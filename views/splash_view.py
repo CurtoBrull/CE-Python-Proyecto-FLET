@@ -12,21 +12,34 @@ def crear_splash(pag: ft.Page, on_entrar) -> ft.Container:
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
             spacing=0,
             controls=[
-                ft.Icon(
-                    ft.Icons.ACCOUNT_BALANCE_WALLET,
-                    size=90,
-                    color=ft.Colors.TEAL_400,
+                # Logo principal desde assets
+                ft.Image(
+                    src="favicon.png",
+                    width=110,
+                    height=110,
                 ),
-                ft.Container(height=24),
-                ft.Text(
-                    "Gestor de Gastos",
-                    size=42,
-                    weight=ft.FontWeight.BOLD,
-                    text_align=ft.TextAlign.CENTER,
+                ft.Container(height=28),
+                # Título con icono de cartera en línea
+                ft.Row(
+                    alignment=ft.MainAxisAlignment.CENTER,
+                    vertical_alignment=ft.CrossAxisAlignment.CENTER,
+                    spacing=12,
+                    controls=[
+                        ft.Icon(
+                            ft.Icons.ACCOUNT_BALANCE_WALLET,
+                            size=32,
+                            color=ft.Colors.TEAL_400,
+                        ),
+                        ft.Text(
+                            "Gestor de Gastos",
+                            size=40,
+                            weight=ft.FontWeight.BOLD,
+                        ),
+                    ],
                 ),
                 ft.Text(
                     "Personales",
-                    size=42,
+                    size=40,
                     weight=ft.FontWeight.W_300,
                     text_align=ft.TextAlign.CENTER,
                     color=ft.Colors.TEAL_400,
