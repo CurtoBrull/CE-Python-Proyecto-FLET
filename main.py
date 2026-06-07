@@ -5,6 +5,7 @@ from database import init_db
 from views.form_view import crear_form
 from views.list_view import crear_lista
 from views.chart_view import crear_grafico
+from views.splash_view import crear_splash
 
 
 def main(pag: ft.Page) -> None:
@@ -116,6 +117,8 @@ def main(pag: ft.Page) -> None:
         actions=[btn_tema],
     )
 
+    _salir_cb = [None]
+
     rail = ft.NavigationRail(
         selected_index=0,
         label_type=ft.NavigationRailLabelType.ALL,
@@ -134,18 +137,61 @@ def main(pag: ft.Page) -> None:
             ),
         ],
         on_change=navegar,
+        trailing=ft.IconButton(
+            icon=ft.Icons.LOGOUT,
+            tooltip="Volver a inicio",
+            on_click=lambda e: _salir_cb[0](e) if _salir_cb[0] else None,
+        ),
     )
 
-    pag.add(
-        ft.Row(
-            controls=[
-                rail,
-                ft.VerticalDivider(width=1),
-                area,
-            ],
-            expand=True,
-        )
+    layout_principal = ft.Row(
+        controls=[
+            rail,
+            ft.VerticalDivider(width=1),
+            area,
+        ],
+        expand=True,
     )
+
+    # Envoltura para transición splash → app
+    envoltura = ft.Container(
+        expand=True,
+        opacity=1,
+        animate_opacity=ft.Animation(350, ft.AnimationCurve.EASE_IN_OUT),
+    )
+    pendiente_entrada = [None]
+
+    def on_fade_entrada(e):
+        if pendiente_entrada[0] is not None:
+            envoltura.content = pendiente_entrada[0]
+            pendiente_entrada[0] = None
+            envoltura.opacity = 1
+            pag.appbar.visible = True
+            pag.update()
+
+    envoltura.on_animation_end = on_fade_entrada
+
+    def al_entrar(e):
+        pendiente_entrada[0] = layout_principal
+        envoltura.opacity = 0
+        pag.update()
+
+    splash_content = crear_splash(pag, al_entrar)
+
+    def al_salir(e):
+        pag.appbar.visible = False
+        rail.selected_index = 0
+        area.content = vista_transacciones
+        pendiente_entrada[0] = splash_content
+        envoltura.opacity = 0
+        pag.update()
+
+    _salir_cb[0] = al_salir
+
+    envoltura.content = splash_content
+    pag.appbar.visible = False
+
+    pag.add(envoltura)
     pag.update()
 
 
