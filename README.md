@@ -2,6 +2,12 @@
 
 Aplicación de escritorio para registrar y visualizar gastos e ingresos personales, desarrollada como proyecto final del **Ciclo de Especialización en Desarrollo de Aplicaciones en Lenguaje Python** (BOE-A-2024-12503).
 
+## Demo
+
+**[https://ce-python-proyecto-flet.onrender.com/](https://ce-python-proyecto-flet.onrender.com/)**
+
+---
+
 ## Tecnologías
 
 | Tecnología | Uso |
