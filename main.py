@@ -1,3 +1,4 @@
+import os
 import flet as ft
 
 from database import init_db
@@ -112,4 +113,4 @@ def main(pag: ft.Page) -> None:
     pag.update()
 
 
-ft.run(main)
+ft.run(main, port=int(os.getenv("PORT", 8000)))

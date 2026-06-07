@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: gestor-gastos-personales
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python main.py
+    envVars:
+      - key: FLET_FORCE_WEB_SERVER
+        value: true
+      - key: DATABASE_URL
+        sync: false
