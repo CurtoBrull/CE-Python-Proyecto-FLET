@@ -1,7 +1,7 @@
 import flet as ft
 
 
-def crear_splash(pag: ft.Page, on_entrar) -> ft.Container:
+def crear_splash(pag: ft.Page, on_entrar, on_info) -> ft.Container:
     """Pantalla de presentación a pantalla completa."""
 
     return ft.Container(
@@ -69,6 +69,17 @@ def crear_splash(pag: ft.Page, on_entrar) -> ft.Container:
                     style=ft.ButtonStyle(
                         bgcolor=ft.Colors.TEAL_700,
                         color=ft.Colors.WHITE,
+                        padding=16,
+                    ),
+                ),
+                ft.Container(height=8),
+                ft.Button(
+                    "Info sobre Flet",
+                    on_click=on_info,
+                    width=260,
+                    style=ft.ButtonStyle(
+                        bgcolor=ft.Colors.TEAL_100,
+                        color=ft.Colors.TEAL_900,
                         padding=16,
                     ),
                 ),

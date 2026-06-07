@@ -6,6 +6,7 @@ from views.form_view import crear_form
 from views.list_view import crear_lista
 from views.chart_view import crear_grafico
 from views.splash_view import crear_splash
+from views.flet_info_view import crear_flet_info
 
 
 def main(pag: ft.Page) -> None:
@@ -32,6 +33,9 @@ def main(pag: ft.Page) -> None:
 
     lista, recargar = crear_lista(pag, refrescar, on_editar=on_editar)
     grafico, recargar_grafico = crear_grafico(pag)
+
+    _volver_cb = [None]
+    info_view = crear_flet_info(pag, on_volver=lambda e: _volver_cb[0](e) if _volver_cb[0] else None)
 
     panel_form = ft.Container(
         content=formulario,
@@ -161,26 +165,42 @@ def main(pag: ft.Page) -> None:
         animate_opacity=ft.Animation(350, ft.AnimationCurve.EASE_IN_OUT),
     )
     pendiente_entrada = [None]
+    pendiente_appbar = [False]
 
     def on_fade_entrada(e):
         if pendiente_entrada[0] is not None:
             envoltura.content = pendiente_entrada[0]
             pendiente_entrada[0] = None
             envoltura.opacity = 1
-            pag.appbar.visible = True
+            pag.appbar.visible = pendiente_appbar[0]
             pag.update()
 
     envoltura.on_animation_end = on_fade_entrada
 
     def al_entrar(e):
+        pendiente_appbar[0] = True
         pendiente_entrada[0] = layout_principal
         envoltura.opacity = 0
         pag.update()
 
-    splash_content = crear_splash(pag, al_entrar)
+    def al_info(e):
+        pendiente_appbar[0] = False
+        pendiente_entrada[0] = info_view
+        envoltura.opacity = 0
+        pag.update()
+
+    splash_content = crear_splash(pag, al_entrar, al_info)
+
+    def al_volver_a_splash(e):
+        pendiente_appbar[0] = False
+        pendiente_entrada[0] = splash_content
+        envoltura.opacity = 0
+        pag.update()
+
+    _volver_cb[0] = al_volver_a_splash
 
     def al_salir(e):
-        pag.appbar.visible = False
+        pendiente_appbar[0] = False
         rail.selected_index = 0
         area.content = vista_transacciones
         pendiente_entrada[0] = splash_content
