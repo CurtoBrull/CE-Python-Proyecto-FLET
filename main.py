@@ -128,4 +128,4 @@ def main(pag: ft.Page) -> None:
     pag.update()
 
 
-ft.run(main, port=int(os.getenv("PORT", 8000)))
+ft.run(main, port=int(os.getenv("PORT", 8000)), assets_dir="assets")
