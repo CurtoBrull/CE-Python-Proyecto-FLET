@@ -34,4 +34,4 @@ def main(pag: ft.Page) -> None:
 
 
 # Inicia la aplicación, llamando a la función main para configurar la ventana y mostrar los controles.
-ft.app(target=main)
+ft.run(main)

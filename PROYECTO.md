@@ -887,6 +887,186 @@ Cuando lo tengas, avisa y pasamos al **Paso 6 — Filtros**.
 
 ---
 
+## Paso 6 — Filtros
+
+### Qué vamos a añadir
+
+Dos Dropdowns encima de la tabla: **mes** y **categoría**.
+Al cambiar cualquiera, la tabla se repopula solo con las filas que coinciden.
+
+```
+[ Mes: Todos ▼ ]  [ Categoría: Todas ▼ ]
+─────────────────────────────────────────
+│ Fecha │ Tipo │ Categoría │ ...        │
+```
+
+### Cambio en `database.py` — añadir `get_filtradas()`
+
+La query usa `WHERE` condicional: si el filtro es `None` no aplica esa condición.
+
+Añade esta función al final de `database.py`:
+
+```python
+def get_filtradas(mes: int | None = None, categoria: str | None = None) -> list[Transaccion]:
+    """Devuelve transacciones aplicando filtros opcionales de mes y categoría."""
+    condiciones = []
+    valores = []
+
+    if mes is not None:
+        condiciones.append("EXTRACT(MONTH FROM fecha) = %s")
+        valores.append(mes)
+
+    if categoria is not None:
+        condiciones.append("categoria = %s")
+        valores.append(categoria)
+
+    where = ("WHERE " + " AND ".join(condiciones)) if condiciones else ""
+
+    with _conectar() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT id, tipo, importe, categoria, descripcion, fecha "
+                f"FROM transacciones {where} ORDER BY fecha DESC",
+                valores or None,
+            )
+            filas = cur.fetchall()
+
+    return [
+        Transaccion(
+            id=f[0],
+            tipo=TipoTransaccion(f[1]),
+            importe=float(f[2]),
+            categoria=Categoria(f[3]),
+            descripcion=f[4],
+            fecha=f[5],
+        )
+        for f in filas
+    ]
+```
+
+> `EXTRACT(MONTH FROM fecha)` es SQL estándar PostgreSQL — devuelve el número de mes (1–12).
+
+### Cambio en `list_view.py` — añadir filtros
+
+Sustituye el fichero completo:
+
+```python
+import flet as ft
+from database import get_filtradas, delete
+from models import TipoTransaccion, Categoria
+
+MESES = {
+    0: "Todos",
+    1: "Enero", 2: "Febrero", 3: "Marzo", 4: "Abril",
+    5: "Mayo", 6: "Junio", 7: "Julio", 8: "Agosto",
+    9: "Septiembre", 10: "Octubre", 11: "Noviembre", 12: "Diciembre",
+}
+
+
+def crear_lista(pag: ft.Page, on_eliminado) -> tuple[ft.Column, callable]:
+    """Devuelve la lista de transacciones con filtros y resumen."""
+
+    tabla = ft.DataTable(
+        columns=[
+            ft.DataColumn(ft.Text("Fecha")),
+            ft.DataColumn(ft.Text("Tipo")),
+            ft.DataColumn(ft.Text("Categoría")),
+            ft.DataColumn(ft.Text("Descripción")),
+            ft.DataColumn(ft.Text("Importe €"), numeric=True),
+            ft.DataColumn(ft.Text("")),
+        ],
+        rows=[],
+    )
+
+    resumen = ft.Text("", size=14)
+
+    filtro_mes = ft.Dropdown(
+        label="Mes",
+        value="0",
+        options=[ft.dropdown.Option(key=str(k), text=v) for k, v in MESES.items()],
+        width=160,
+    )
+
+    filtro_categoria = ft.Dropdown(
+        label="Categoría",
+        value="todas",
+        options=[ft.dropdown.Option(key="todas", text="Todas")]
+        + [ft.dropdown.Option(key=c.value, text=c.value) for c in Categoria],
+        width=200,
+    )
+
+    def cargar():
+        mes = int(filtro_mes.value) if filtro_mes.value != "0" else None
+        cat = filtro_categoria.value if filtro_categoria.value != "todas" else None
+
+        trans = get_filtradas(mes=mes, categoria=cat)
+
+        tabla.rows.clear()
+        for t in trans:
+            color = ft.Colors.RED_400 if t.tipo == TipoTransaccion.GASTO else ft.Colors.GREEN_400
+
+            def hacer_eliminar(tran_id):
+                def eliminar(e):
+                    delete(tran_id)
+                    on_eliminado(e)
+                return eliminar
+
+            tabla.rows.append(
+                ft.DataRow(cells=[
+                    ft.DataCell(ft.Text(str(t.fecha))),
+                    ft.DataCell(ft.Text(t.tipo.value, color=color)),
+                    ft.DataCell(ft.Text(t.categoria.value)),
+                    ft.DataCell(ft.Text(t.descripcion)),
+                    ft.DataCell(ft.Text(f"{t.importe:.2f}", color=color)),
+                    ft.DataCell(ft.IconButton(
+                        icon=ft.Icons.DELETE_OUTLINE,
+                        icon_color=ft.Colors.RED_300,
+                        on_click=hacer_eliminar(t.id),
+                    )),
+                ])
+            )
+
+        ingresos = sum(t.importe for t in trans if t.tipo == TipoTransaccion.INGRESO)
+        gastos = sum(t.importe for t in trans if t.tipo == TipoTransaccion.GASTO)
+        saldo = ingresos - gastos
+        resumen.value = f"Ingresos: {ingresos:.2f} €   |   Gastos: {gastos:.2f} €   |   Saldo: {saldo:.2f} €"
+        resumen.color = ft.Colors.GREEN_600 if saldo >= 0 else ft.Colors.RED_600
+
+    def al_cambiar_filtro(e):
+        cargar()
+        pag.update()
+
+    filtro_mes.on_change = al_cambiar_filtro
+    filtro_categoria.on_change = al_cambiar_filtro
+
+    cargar()
+
+    columna = ft.Column(
+        controls=[
+            ft.Text("Transacciones", size=22, weight=ft.FontWeight.BOLD),
+            ft.Row([filtro_mes, filtro_categoria], spacing=12),
+            ft.Divider(),
+            ft.Row([resumen]),
+            ft.Column(controls=[tabla], scroll=ft.ScrollMode.AUTO),
+        ],
+        expand=True,
+        spacing=12,
+    )
+    return columna, cargar
+```
+
+### Comprueba que funciona
+
+- [ ] Aparecen los dos Dropdowns encima de la tabla
+- [ ] Cambiar el mes filtra las filas correctamente
+- [ ] Cambiar la categoría filtra las filas correctamente
+- [ ] El resumen (ingresos/gastos/saldo) se recalcula con los datos filtrados
+- [ ] "Todos" / "Todas" muestra todas las transacciones
+
+Cuando lo tengas, avisa y pasamos al **Paso 7 — Gráfico de barras**.
+
+---
+
 ## Notas para la entrega
 
 - Código comentado en **español** siguiendo PEP 8

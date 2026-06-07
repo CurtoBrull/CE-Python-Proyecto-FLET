@@ -67,6 +67,42 @@ def get_all() -> list[Transaccion]:
                 )
                 for row in rows
             ]
+            
+def get_filtered(mes: int | None = None, categoria: str | None = None) -> list[Transaccion]:
+    """Devuelve transacciones aplicando filtros opcionales de mes y categoría."""
+    condiciones = []
+    valores = []
+
+    if mes is not None:
+        condiciones.append("EXTRACT(MONTH FROM fecha) = %s")
+        valores.append(mes)
+
+    if categoria is not None:
+        condiciones.append("categoria = %s")
+        valores.append(categoria)
+
+    where = ("WHERE " + " AND ".join(condiciones)) if condiciones else ""
+
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                f"SELECT id, tipo, importe, categoria, descripcion, fecha "
+                f"FROM transacciones {where} ORDER BY fecha DESC",
+                valores or None,
+            )
+            filas = cur.fetchall()
+
+    return [
+        Transaccion(
+            id=f[0],
+            tipo=TipoTransaccion(f[1]),
+            importe=float(f[2]),
+            categoria=Categoria(f[3]),
+            descripcion=f[4],
+            fecha=f[5],
+        )
+        for f in filas
+    ]
 
 
 def delete(tran_id: int) -> None:
