@@ -92,6 +92,12 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
         cargar()
         pag.update()
 
+    def al_limpiar(e):
+        mes_ref.current.value = "0"
+        cat_ref.current.value = "todas"
+        cargar()
+        pag.update()
+
     # --- Exportar CSV ---
     msg_export = ft.Text("", size=12, color=ft.Colors.GREEN_600)
 
@@ -184,6 +190,11 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
                     width=200,
                 ),
                 ft.Button("Filtrar", on_click=al_filtrar),
+                ft.IconButton(
+                    icon=ft.Icons.FILTER_ALT_OFF_OUTLINED,
+                    tooltip="Limpiar filtros",
+                    on_click=al_limpiar,
+                ),
                 ft.IconButton(
                     icon=ft.Icons.DOWNLOAD_OUTLINED,
                     tooltip="Exportar CSV",
