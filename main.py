@@ -16,6 +16,7 @@ def main(pag: ft.Page) -> None:
     pag.dark_theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)
     pag.theme_mode = ft.ThemeMode.LIGHT
     pag.bgcolor = ft.Colors.GREY_100
+    pag.favicon = "favicon.png"
 
     init_db()
 
