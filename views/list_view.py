@@ -7,39 +7,27 @@ from database import delete, get_filtered
 from models import TipoTransaccion, Categoria
 from utils.constants import MESES
 
+# Clave de ordenación por índice de columna
+SORT_KEYS = [
+    lambda t: str(t.fecha),
+    lambda t: t.tipo.value,
+    lambda t: t.categoria.value,
+    lambda t: t.descripcion,
+    lambda t: t.importe,
+]
+
 
 def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, callable]:
     """Devuelve la lista de transacciones con resumen como un Column."""
 
-    tabla = ft.DataTable(
-        columns=[
-            ft.DataColumn(ft.Text("Fecha")),
-            ft.DataColumn(ft.Text("Tipo")),
-            ft.DataColumn(ft.Text("Categoría")),
-            ft.DataColumn(ft.Text("Descripción")),
-            ft.DataColumn(ft.Text("Importe €"), numeric=True),
-            ft.DataColumn(ft.Text("")),
-        ],
-        rows=[],
-        column_spacing=20,
-    )
+    trans_actual = []
+    sort_estado = {"col": None, "asc": True}  # columna activa y dirección
 
     resumen = ft.Text("", size=14)
-    trans_actual = []  # transacciones del último cargar(), usadas para exportar
-
     mes_ref = ft.Ref[ft.Dropdown]()
     cat_ref = ft.Ref[ft.Dropdown]()
 
-    def cargar():
-        mes_val = mes_ref.current.value if mes_ref.current else "0"
-        cat_val = cat_ref.current.value if cat_ref.current else "todas"
-        mes = int(mes_val) if mes_val != "0" else None
-        cat = cat_val if cat_val != "todas" else None
-        trans = get_filtered(mes=mes, categoria=cat)
-
-        trans_actual.clear()
-        trans_actual.extend(trans)
-
+    def construir_filas(trans):
         tabla.rows.clear()
         for t in trans:
             color = ft.Colors.RED_400 if t.tipo == TipoTransaccion.GASTO else ft.Colors.GREEN_400
@@ -88,6 +76,58 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
         resumen.value = f"Ingresos: {ingresos:.2f} €   |   Gastos: {gastos:.2f} €   |   Saldo: {saldo:.2f} €"
         resumen.color = ft.Colors.GREEN_600 if saldo >= 0 else ft.Colors.RED_600
 
+    def cargar():
+        mes_val = mes_ref.current.value if mes_ref.current else "0"
+        cat_val = cat_ref.current.value if cat_ref.current else "todas"
+        mes = int(mes_val) if mes_val != "0" else None
+        cat = cat_val if cat_val != "todas" else None
+        trans = get_filtered(mes=mes, categoria=cat)
+
+        trans_actual.clear()
+        trans_actual.extend(trans)
+
+        # aplicar ordenación activa si existe
+        if sort_estado["col"] is not None:
+            trans_actual.sort(
+                key=SORT_KEYS[sort_estado["col"]],
+                reverse=not sort_estado["asc"],
+            )
+
+        construir_filas(trans_actual)
+
+    def al_ordenar(e):
+        col = e.column_index
+        if sort_estado["col"] == col:
+            sort_estado["asc"] = not sort_estado["asc"]
+        else:
+            sort_estado["col"] = col
+            sort_estado["asc"] = True
+
+        tabla.sort_column_index = col
+        tabla.sort_ascending = sort_estado["asc"]
+
+        trans_actual.sort(
+            key=SORT_KEYS[col],
+            reverse=not sort_estado["asc"],
+        )
+        construir_filas(trans_actual)
+        pag.update()
+
+    tabla = ft.DataTable(
+        columns=[
+            ft.DataColumn(ft.Text("Fecha"), on_sort=al_ordenar),
+            ft.DataColumn(ft.Text("Tipo"), on_sort=al_ordenar),
+            ft.DataColumn(ft.Text("Categoría"), on_sort=al_ordenar),
+            ft.DataColumn(ft.Text("Descripción"), on_sort=al_ordenar),
+            ft.DataColumn(ft.Text("Importe €"), numeric=True, on_sort=al_ordenar),
+            ft.DataColumn(ft.Text("")),
+        ],
+        rows=[],
+        column_spacing=20,
+        sort_column_index=None,
+        sort_ascending=True,
+    )
+
     def al_filtrar(e):
         cargar()
         pag.update()
@@ -102,7 +142,6 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
     msg_export = ft.Text("", size=12, color=ft.Colors.GREEN_600)
 
     def _generar_csv() -> str:
-        """Genera el contenido CSV como string."""
         buf = io.StringIO()
         writer = csv.writer(buf)
         writer.writerow(["ID", "Fecha", "Tipo", "Categoría", "Descripción", "Importe"])
@@ -136,7 +175,6 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
             pass
 
         if not en_escritorio:
-            # Web: mostrar CSV en diálogo para copiar
             contenido = _generar_csv()
             dialogo = ft.AlertDialog(
                 title=ft.Text(f"Exportar — {nombre}"),
