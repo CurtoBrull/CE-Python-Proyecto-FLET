@@ -105,6 +105,20 @@ def get_filtered(mes: int | None = None, categoria: str | None = None) -> list[T
     ]
 
 
+def update_transaccion(t: Transaccion) -> None:
+    """Actualiza una transacción existente por su id."""
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                """
+                UPDATE transacciones
+                SET tipo=%s, importe=%s, categoria=%s, descripcion=%s, fecha=%s
+                WHERE id=%s
+                """,
+                (t.tipo.value, t.importe, t.categoria.value, t.descripcion, t.fecha, t.id),
+            )
+
+
 def delete(tran_id: int) -> None:
     """Elimina una transacción de la base de datos por su ID."""
     with _connect() as conn:

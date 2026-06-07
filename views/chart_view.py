@@ -61,12 +61,16 @@ def crear_grafico(pag: ft.Page) -> tuple[ft.Column, callable]:
 
     columna = ft.Column(
         controls=[
-            ft.Text("Gastos por categoría", size=20, weight=ft.FontWeight.BOLD),
-            ft.Divider(),
-            gastos_container,
-            ft.Text("Ingresos por categoría", size=20, weight=ft.FontWeight.BOLD),
-            ft.Divider(),
-            ingresos_container,
+            ft.Text("Gastos por categoría", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
+            ft.Card(
+                content=ft.Container(content=gastos_container, padding=20),
+                elevation=2,
+            ),
+            ft.Text("Ingresos por categoría", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
+            ft.Card(
+                content=ft.Container(content=ingresos_container, padding=20),
+                elevation=2,
+            ),
         ],
         scroll=ft.ScrollMode.AUTO,
         expand=True,

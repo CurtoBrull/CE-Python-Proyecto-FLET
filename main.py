@@ -9,7 +9,9 @@ from views.chart_view import crear_grafico
 def main(pag: ft.Page) -> None:
     pag.title = "Gestor de Gastos"
     pag.window.width = 1300
-    pag.window.height = 850
+    pag.window.height = 950
+    pag.theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)
+    pag.dark_theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)
     pag.theme_mode = ft.ThemeMode.LIGHT
 
     init_db()
@@ -19,13 +21,17 @@ def main(pag: ft.Page) -> None:
         recargar_grafico()
         pag.update()
 
-    formulario = crear_form(pag, refrescar)
-    lista, recargar = crear_lista(pag, refrescar)
+    formulario, cargar_transaccion = crear_form(pag, refrescar)
+
+    def on_editar(t):
+        cargar_transaccion(t)
+
+    lista, recargar = crear_lista(pag, refrescar, on_editar=on_editar)
     grafico, recargar_grafico = crear_grafico(pag)
 
     vista_transacciones = ft.Row(
         controls=[
-            ft.Container(content=formulario, width=350, padding=20),
+            ft.Container(content=formulario, width=370, padding=20),
             ft.VerticalDivider(),
             ft.Container(content=lista, expand=True, padding=20),
         ],
@@ -38,7 +44,6 @@ def main(pag: ft.Page) -> None:
         padding=20,
     )
 
-    # Un único contenedor que intercambia la vista activa
     area = ft.Container(content=vista_transacciones, expand=True)
 
     def navegar(e):
@@ -49,6 +54,31 @@ def main(pag: ft.Page) -> None:
             recargar_grafico()
             area.content = vista_grafico
         pag.update()
+
+    def alternar_tema(e):
+        pag.theme_mode = (
+            ft.ThemeMode.DARK
+            if pag.theme_mode == ft.ThemeMode.LIGHT
+            else ft.ThemeMode.LIGHT
+        )
+        btn_tema.icon = (
+            ft.Icons.DARK_MODE
+            if pag.theme_mode == ft.ThemeMode.LIGHT
+            else ft.Icons.LIGHT_MODE
+        )
+        pag.update()
+
+    btn_tema = ft.IconButton(
+        icon=ft.Icons.DARK_MODE,
+        on_click=alternar_tema,
+        tooltip="Alternar modo oscuro",
+    )
+
+    pag.appbar = ft.AppBar(
+        title=ft.Text("Gestor de Gastos Personales", theme_style=ft.TextThemeStyle.TITLE_LARGE),
+        center_title=False,
+        actions=[btn_tema],
+    )
 
     rail = ft.NavigationRail(
         selected_index=0,
@@ -79,7 +109,7 @@ def main(pag: ft.Page) -> None:
             expand=True,
         )
     )
-    pag.update()  # aplica dimensiones de ventana
+    pag.update()
 
 
 ft.run(main)

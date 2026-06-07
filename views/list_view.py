@@ -4,7 +4,7 @@ from models import TipoTransaccion, Categoria
 from utils.constants import MESES
 
 
-def crear_lista(pag: ft.Page, on_eliminado) -> tuple[ft.Column, callable]:
+def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, callable]:
     """Devuelve la lista de transacciones con resumen como un Column."""
 
     tabla = ft.DataTable(
@@ -17,6 +17,7 @@ def crear_lista(pag: ft.Page, on_eliminado) -> tuple[ft.Column, callable]:
             ft.DataColumn(ft.Text("")),
         ],
         rows=[],
+        column_spacing=20,
     )
 
     resumen = ft.Text("", size=14)
@@ -42,6 +43,12 @@ def crear_lista(pag: ft.Page, on_eliminado) -> tuple[ft.Column, callable]:
                     on_eliminado(e)
                 return eliminar
 
+            def hacer_editar(tran):
+                def editar(e):
+                    if on_editar:
+                        on_editar(tran)
+                return editar
+
             tabla.rows.append(
                 ft.DataRow(cells=[
                     ft.DataCell(ft.Text(str(t.fecha))),
@@ -49,11 +56,22 @@ def crear_lista(pag: ft.Page, on_eliminado) -> tuple[ft.Column, callable]:
                     ft.DataCell(ft.Text(t.categoria.value)),
                     ft.DataCell(ft.Text(t.descripcion)),
                     ft.DataCell(ft.Text(f"{t.importe:.2f}", color=color)),
-                    ft.DataCell(ft.IconButton(
-                        icon=ft.Icons.DELETE_OUTLINE,
-                        icon_color=ft.Colors.RED_300,
-                        on_click=hacer_eliminar(t.id),
-                    )),
+                    ft.DataCell(
+                        ft.Row([
+                            ft.IconButton(
+                                icon=ft.Icons.EDIT_OUTLINED,
+                                icon_color=ft.Colors.BLUE_300,
+                                on_click=hacer_editar(t),
+                                tooltip="Editar",
+                            ),
+                            ft.IconButton(
+                                icon=ft.Icons.DELETE_OUTLINE,
+                                icon_color=ft.Colors.RED_300,
+                                on_click=hacer_eliminar(t.id),
+                                tooltip="Eliminar",
+                            ),
+                        ], spacing=0)
+                    ),
                 ])
             )
 
@@ -71,7 +89,7 @@ def crear_lista(pag: ft.Page, on_eliminado) -> tuple[ft.Column, callable]:
 
     columna = ft.Column(
         controls=[
-            ft.Text("Transacciones", size=22, weight=ft.FontWeight.BOLD),
+            ft.Text("Transacciones", theme_style=ft.TextThemeStyle.HEADLINE_SMALL),
             ft.Row([
                 ft.Dropdown(
                     ref=mes_ref,
@@ -91,7 +109,13 @@ def crear_lista(pag: ft.Page, on_eliminado) -> tuple[ft.Column, callable]:
                 ft.Button("Filtrar", on_click=al_filtrar),
             ], spacing=12),
             ft.Divider(),
-            ft.Row([resumen]),
+            ft.Card(
+                content=ft.Container(
+                    content=resumen,
+                    padding=12,
+                ),
+                elevation=1,
+            ),
             ft.Column(controls=[tabla], scroll=ft.ScrollMode.AUTO),
         ],
         expand=True,

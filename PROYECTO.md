@@ -1296,6 +1296,97 @@ Cuando lo tengas, avisa y pasamos al **Paso 8 — Pulir estilo**.
 
 ---
 
+## Paso 8 — Pulir estilo
+
+### Temas en Flet
+
+Flet usa el sistema de temas de Flutter. Se define con `ft.Theme` y se asigna a `page.theme` (modo claro) y `page.dark_theme` (modo oscuro).
+
+```python
+page.theme = ft.Theme(color_scheme_seed=ft.Colors.BLUE)
+page.dark_theme = ft.Theme(color_scheme_seed=ft.Colors.BLUE)
+page.theme_mode = ft.ThemeMode.LIGHT  # LIGHT / DARK / SYSTEM
+```
+
+`color_scheme_seed` genera automáticamente toda la paleta de colores (primario, secundario, superficies, etc.) a partir de un color base. No hace falta definir cada color manualmente.
+
+### Cambios en `main.py`
+
+Añade el tema y un botón de alternancia claro/oscuro en el NavigationRail:
+
+```python
+def main(pag: ft.Page) -> None:
+    pag.title = "Gestor de Gastos"
+    pag.window.width = 1300
+    pag.window.height = 850
+    pag.theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)
+    pag.dark_theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)
+    pag.theme_mode = ft.ThemeMode.LIGHT
+```
+
+Y añade un `ft.IconButton` de modo oscuro al final del rail:
+
+```python
+def alternar_tema(e):
+    pag.theme_mode = (
+        ft.ThemeMode.DARK
+        if pag.theme_mode == ft.ThemeMode.LIGHT
+        else ft.ThemeMode.LIGHT
+    )
+    btn_tema.icon = (
+        ft.Icons.DARK_MODE if pag.theme_mode == ft.ThemeMode.LIGHT else ft.Icons.LIGHT_MODE
+    )
+    pag.update()
+
+btn_tema = ft.IconButton(
+    icon=ft.Icons.DARK_MODE,
+    on_click=alternar_tema,
+    tooltip="Alternar modo oscuro",
+)
+
+rail = ft.NavigationRail(
+    ...
+    trailing=btn_tema,   # añade el botón al final del rail
+)
+```
+
+### Mejoras visuales en las vistas
+
+**`form_view.py`** — añade padding y sombra al formulario envolviéndolo en un Card:
+
+```python
+return ft.Card(
+    content=ft.Container(
+        content=ft.Column(controls=[...], spacing=16),
+        padding=24,
+    ),
+    elevation=2,
+)
+```
+
+**`list_view.py`** — aplica `column_spacing` y `border` a la tabla para mejor legibilidad:
+
+```python
+tabla = ft.DataTable(
+    columns=[...],
+    rows=[],
+    column_spacing=20,
+    border=ft.border.all(1, ft.Colors.OUTLINE),
+    border_radius=8,
+)
+```
+
+### Comprueba que funciona
+
+- [ ] La app arranca con el color teal como tema
+- [ ] El botón de luna/sol en el rail alterna entre claro y oscuro
+- [ ] El formulario tiene sombra (Card)
+- [ ] La tabla tiene bordes
+
+Cuando lo tengas, avisa y preparamos el **README y requirements.txt** para la entrega.
+
+---
+
 ## Notas para la entrega
 
 - Código comentado en **español** siguiendo PEP 8
