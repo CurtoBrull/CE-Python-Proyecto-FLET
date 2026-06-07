@@ -126,7 +126,7 @@ Cuando ejecutas `python main.py`, Flet arranca un proceso Flutter en segundo pla
 
 ```
 python main.py
-    └─► ft.app(target=main)
+    └─► ft.run(main)
             └─► crea ft.Page  (la ventana)
                     └─► llama a tu función main(page)
                             └─► tú añades controles a page
@@ -136,7 +136,7 @@ python main.py
 
 | Concepto | Qué es |
 |---|---|
-| `ft.app(target=main)` | Arranca la app. `target` es la función que recibe la página |
+| `ft.run(main)` | Arranca la app. `target` es la función que recibe la página |
 | `ft.Page` | La ventana. Tiene propiedades: `title`, `width`, `height`, `theme_mode`, etc. |
 | `page.add(control)` | Añade un control (widget) a la ventana y lo renderiza |
 | `page.update()` | Refresca la UI después de cambiar algo (necesario cuando modificas controles existentes) |
@@ -209,7 +209,7 @@ def main(page: ft.Page) -> None:
     )
 
 
-ft.app(target=main)
+ft.run(main)
 ```
 
 ### Ejecutar
@@ -672,8 +672,8 @@ from views.form_view import crear_formulario
 
 def main(page: ft.Page) -> None:
     page.title = "Gestor de Gastos"
-    page.window_width = 900
-    page.window_height = 650
+    page.window.width = 900
+    page.window.height = 650
     page.theme_mode = ft.ThemeMode.LIGHT
 
     init_db()
@@ -684,7 +684,7 @@ def main(page: ft.Page) -> None:
     page.add(crear_formulario(page, on_guardado))
 
 
-ft.app(target=main)
+ft.run(main)
 ```
 
 ### Comprueba que funciona
@@ -832,8 +832,8 @@ from views.list_view import crear_lista
 
 def main(page: ft.Page) -> None:
     page.title = "Gestor de Gastos"
-    page.window_width = 900
-    page.window_height = 650
+    page.window.width = 900
+    page.window.height = 650
     page.theme_mode = ft.ThemeMode.LIGHT
 
     init_db()
@@ -862,7 +862,7 @@ def main(page: ft.Page) -> None:
     )
 
 
-ft.app(target=main)
+ft.run(main)
 ```
 
 ### Por qué `hacer_eliminar(tran_id)` y no lambda
@@ -1064,6 +1064,217 @@ def crear_lista(pag: ft.Page, on_eliminado) -> tuple[ft.Column, callable]:
 - [ ] "Todos" / "Todas" muestra todas las transacciones
 
 Cuando lo tengas, avisa y pasamos al **Paso 7 — Gráfico de barras**.
+
+---
+
+## Paso 7 — Gráfico de barras
+
+### Estructura de la pantalla
+
+En este paso añadimos una segunda pestaña con el gráfico. Usaremos `ft.Tabs` para alternar entre la vista de lista y la vista de gráfico.
+
+```
+[ Lista de transacciones ]  [ Gráfico ]
+─────────────────────────────────────────
+  Gráfico de gastos por categoría
+```
+
+### Cambio en `database.py` — añadir `get_gastos_por_categoria()`
+
+Añade al final de `database.py`:
+
+```python
+def get_gastos_por_categoria() -> dict[str, float]:
+    """Devuelve el total de gastos agrupado por categoría."""
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT categoria, SUM(importe)
+                FROM transacciones
+                WHERE tipo = 'Gasto'
+                GROUP BY categoria
+                ORDER BY SUM(importe) DESC
+            """)
+            filas = cur.fetchall()
+    return {fila[0]: float(fila[1]) for fila in filas}
+```
+
+### Cómo funciona `ft.BarChart`
+
+```python
+ft.BarChart(
+    bar_groups=[
+        ft.BarChartGroup(
+            x=0,                          # posición en eje X
+            bar_rods=[
+                ft.BarChartRod(
+                    from_y=0,             # base de la barra
+                    to_y=45.50,           # altura = valor
+                    width=30,
+                    color=ft.Colors.BLUE,
+                )
+            ],
+        ),
+    ],
+    bottom_axis=ft.ChartAxis(
+        labels=[
+            ft.ChartAxisLabel(value=0, label=ft.Text("Alimentación")),
+        ],
+        labels_size=40,
+    ),
+    max_y=100,
+    expand=True,
+)
+```
+
+### Tu tarea — crear `views/chart_view.py`
+
+```python
+import flet as ft
+from database import get_gastos_por_categoria
+
+COLORES = [
+    ft.Colors.BLUE_400,
+    ft.Colors.RED_400,
+    ft.Colors.GREEN_400,
+    ft.Colors.ORANGE_400,
+    ft.Colors.PURPLE_400,
+    ft.Colors.TEAL_400,
+    ft.Colors.PINK_400,
+]
+
+
+def crear_grafico(pag: ft.Page) -> ft.Column:
+    """Devuelve el gráfico de gastos por categoría como un Column."""
+
+    chart_container = ft.Container(expand=True)
+
+    def cargar():
+        datos = get_gastos_por_categoria()
+
+        if not datos:
+            chart_container.content = ft.Text(
+                "Sin datos de gastos para mostrar.", size=16
+            )
+            return
+
+        categorias = list(datos.keys())
+        valores = list(datos.values())
+        max_val = max(valores) * 1.2
+
+        grupos = [
+            ft.BarChartGroup(
+                x=i,
+                bar_rods=[
+                    ft.BarChartRod(
+                        from_y=0,
+                        to_y=v,
+                        width=35,
+                        color=COLORES[i % len(COLORES)],
+                        tooltip=f"{cat}: {v:.2f} €",
+                        border_radius=4,
+                    )
+                ],
+            )
+            for i, (cat, v) in enumerate(zip(categorias, valores))
+        ]
+
+        etiquetas = [
+            ft.ChartAxisLabel(
+                value=i,
+                label=ft.Container(
+                    ft.Text(cat, size=11, text_align=ft.TextAlign.CENTER),
+                    width=70,
+                ),
+            )
+            for i, cat in enumerate(categorias)
+        ]
+
+        chart_container.content = ft.BarChart(
+            bar_groups=grupos,
+            bottom_axis=ft.ChartAxis(labels=etiquetas, labels_size=50),
+            left_axis=ft.ChartAxis(labels_size=40),
+            max_y=max_val,
+            expand=True,
+            height=350,
+            interactive=True,
+        )
+
+    cargar()
+
+    return ft.Column(
+        controls=[
+            ft.Text("Gastos por categoría", size=22, weight=ft.FontWeight.BOLD),
+            ft.Divider(),
+            chart_container,
+        ],
+        expand=True,
+        spacing=16,
+    )
+```
+
+### Actualizar `main.py` con `ft.Tabs`
+
+```python
+import flet as ft
+from database import init_db
+from views.form_view import crear_form
+from views.list_view import crear_lista
+from views.chart_view import crear_grafico
+
+
+def main(pag: ft.Page) -> None:
+    pag.title = "Gestor de Gastos"
+    pag.window.width = 1000
+    pag.window.height = 700
+    pag.theme_mode = ft.ThemeMode.LIGHT
+
+    init_db()
+
+    def refrescar(e=None):
+        recargar()
+        pag.update()
+
+    formulario = crear_form(pag, refrescar)
+    lista, recargar = crear_lista(pag, refrescar)
+    grafico = crear_grafico(pag)
+
+    pag.add(
+        ft.Tabs(
+            selected_index=0,
+            expand=True,
+            tabs=[
+                ft.Tab(
+                    text="Transacciones",
+                    content=ft.Row(
+                        controls=[
+                            ft.Container(content=formulario, width=350, padding=20),
+                            ft.VerticalDivider(),
+                            ft.Container(content=lista, expand=True, padding=20),
+                        ],
+                        expand=True,
+                    ),
+                ),
+                ft.Tab(
+                    text="Gráfico",
+                    content=ft.Container(content=grafico, expand=True, padding=20),
+                ),
+            ],
+        )
+    )
+
+
+ft.run(main)
+```
+
+### Comprueba que funciona
+
+- [ ] Aparecen dos pestañas: "Transacciones" y "Gráfico"
+- [ ] La pestaña Gráfico muestra barras por categoría
+- [ ] Al pasar el ratón sobre una barra aparece el tooltip con el valor
+- [ ] Si no hay gastos aparece el mensaje "Sin datos"
+
+Cuando lo tengas, avisa y pasamos al **Paso 8 — Pulir estilo**.
 
 ---
 

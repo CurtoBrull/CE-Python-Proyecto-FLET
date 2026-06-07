@@ -111,3 +111,33 @@ def delete(tran_id: int) -> None:
         with conn.cursor() as cur:
             cur.execute("DELETE FROM transacciones WHERE id = %s;", (tran_id,))
             conn.commit()
+            
+            
+def get_gastos_por_categoria() -> dict[str, float]:
+    """Devuelve el total de gastos agrupado por categoría."""
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT categoria, SUM(importe)
+                FROM transacciones
+                WHERE tipo = 'Gasto'
+                GROUP BY categoria
+                ORDER BY SUM(importe) DESC
+            """)
+            filas = cur.fetchall()
+    return {fila[0]: float(fila[1]) for fila in filas}
+
+
+def get_ingresos_por_categoria() -> dict[str, float]:
+    """Devuelve el total de ingresos agrupado por categoría."""
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT categoria, SUM(importe)
+                FROM transacciones
+                WHERE tipo = 'Ingreso'
+                GROUP BY categoria
+                ORDER BY SUM(importe) DESC
+            """)
+            filas = cur.fetchall()
+    return {fila[0]: float(fila[1]) for fila in filas}

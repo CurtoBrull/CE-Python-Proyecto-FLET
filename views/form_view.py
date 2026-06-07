@@ -11,20 +11,20 @@ def crear_form(pag: ft.Page, on_guardado) -> ft.Column:
     categoria_ref = ft.Ref[ft.Dropdown]()
     descripcion_ref = ft.Ref[ft.TextField]()
 
+    estado = ft.Text("", size=13, color=ft.Colors.GREEN_600)
+
     def guardar(e):
-        # Validaciones básicas
         if not importe_ref.current.value:
-            # SnackBar es un mensaje temporal que aparece en la parte inferior de la pantalla
-            pag.snack_bar = ft.SnackBar(ft.Text("El importe es obligatorio"))
-            pag.snack_bar.open = True
+            estado.value = "El importe es obligatorio"
+            estado.color = ft.Colors.RED_600
             pag.update()
             return
 
         try:
             importe = float(importe_ref.current.value.replace(",", "."))
         except ValueError:
-            pag.snack_bar = ft.SnackBar(ft.Text("El importe debe ser un número"))
-            pag.snack_bar.open = True
+            estado.value = "El importe debe ser un número"
+            estado.color = ft.Colors.RED_600
             pag.update()
             return
 
@@ -35,14 +35,13 @@ def crear_form(pag: ft.Page, on_guardado) -> ft.Column:
             descripcion=descripcion_ref.current.value or "",
         )
 
-        insert(tran)  # Guarda en la base de datos
+        insert(tran)
 
-        # Limpia el formulario
         importe_ref.current.value = ""
         descripcion_ref.current.value = ""
-        pag.snack_bar = ft.SnackBar(ft.Text("Transacción guardada"))
-        pag.snack_bar.open = True
-        on_guardado(e)  # llama a refrescar en main.py
+        estado.value = "Transacción guardada"
+        estado.color = ft.Colors.GREEN_600
+        on_guardado(e)
         pag.update()
 
     return ft.Column(
@@ -83,6 +82,7 @@ def crear_form(pag: ft.Page, on_guardado) -> ft.Column:
             ft.ElevatedButton(
                 "Guardar", on_click=guardar, width=300
             ),
+            estado,
         ],
         spacing=16,
     )
