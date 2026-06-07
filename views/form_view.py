@@ -11,10 +11,26 @@ def crear_form(pag: ft.Page, on_guardado) -> tuple[ft.Card, callable]:
     categoria_ref = ft.Ref[ft.Dropdown]()
     descripcion_ref = ft.Ref[ft.TextField]()
     btn_ref = ft.Ref[ft.Button]()
+    btn_cancelar_ref = ft.Ref[ft.Button]()
     titulo_ref = ft.Ref[ft.Text]()
 
     estado = ft.Text("", size=13, color=ft.Colors.GREEN_600)
     tran_editando = [None]  # lista mutable para modificar desde closures anidadas
+
+    def _resetear_form():
+        tran_editando[0] = None
+        btn_ref.current.text = "Guardar"
+        btn_cancelar_ref.current.visible = False
+        titulo_ref.current.value = "Nueva Transacción"
+        estado.value = ""
+        importe_ref.current.value = ""
+        descripcion_ref.current.value = ""
+        tipo_ref.current.value = TipoTransaccion.GASTO.value
+        categoria_ref.current.value = Categoria.ALIMENTACION.value
+
+    def cancelar(e):
+        _resetear_form()
+        pag.update()
 
     def guardar(e):
         if not importe_ref.current.value:
@@ -40,19 +56,18 @@ def crear_form(pag: ft.Page, on_guardado) -> tuple[ft.Card, callable]:
 
         if tran_editando[0] is None:
             insert(tran)
+            importe_ref.current.value = ""
+            descripcion_ref.current.value = ""
             estado.value = "Transacción guardada"
+            estado.color = ft.Colors.GREEN_600
         else:
             tran.id = tran_editando[0].id
             tran.fecha = tran_editando[0].fecha
             update_transaccion(tran)
-            tran_editando[0] = None
-            btn_ref.current.text = "Guardar"
-            titulo_ref.current.value = "Nueva Transacción"
+            _resetear_form()
             estado.value = "Transacción actualizada"
+            estado.color = ft.Colors.GREEN_600
 
-        estado.color = ft.Colors.GREEN_600
-        importe_ref.current.value = ""
-        descripcion_ref.current.value = ""
         on_guardado(e)
         pag.update()
 
@@ -64,8 +79,10 @@ def crear_form(pag: ft.Page, on_guardado) -> tuple[ft.Card, callable]:
         categoria_ref.current.value = t.categoria.value
         descripcion_ref.current.value = t.descripcion
         btn_ref.current.text = "Actualizar"
+        btn_cancelar_ref.current.visible = True
         titulo_ref.current.value = "Editar Transacción"
-        estado.value = f"Editando transacción #{t.id}"
+        label = t.descripcion.strip() if t.descripcion and t.descripcion.strip() else t.categoria.value
+        estado.value = f"Editando: {label}"
         estado.color = ft.Colors.BLUE_600
         pag.update()
 
@@ -107,6 +124,14 @@ def crear_form(pag: ft.Page, on_guardado) -> tuple[ft.Card, callable]:
                         width=300,
                     ),
                     ft.Button("Guardar", ref=btn_ref, on_click=guardar, width=300),
+                    ft.Button(
+                        "Cancelar",
+                        ref=btn_cancelar_ref,
+                        on_click=cancelar,
+                        width=300,
+                        visible=False,
+                        style=ft.ButtonStyle(color=ft.Colors.RED_400),
+                    ),
                     estado,
                 ],
                 spacing=16,
