@@ -14,6 +14,7 @@ def main(pag: ft.Page) -> None:
     pag.theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)
     pag.dark_theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)
     pag.theme_mode = ft.ThemeMode.LIGHT
+    pag.bgcolor = ft.Colors.GREY_100
 
     init_db()
 
@@ -30,10 +31,17 @@ def main(pag: ft.Page) -> None:
     lista, recargar = crear_lista(pag, refrescar, on_editar=on_editar)
     grafico, recargar_grafico = crear_grafico(pag)
 
+    panel_form = ft.Container(
+        content=formulario,
+        width=370,
+        padding=20,
+        bgcolor=ft.Colors.WHITE,
+        border_radius=12,
+    )
+
     vista_transacciones = ft.Row(
         controls=[
-            ft.Container(content=formulario, width=370, padding=20),
-            ft.VerticalDivider(),
+            panel_form,
             ft.Container(content=lista, expand=True, padding=20),
         ],
         expand=True,
@@ -71,6 +79,12 @@ def main(pag: ft.Page) -> None:
         area.opacity = 0
         pag.update()
 
+    def _aplicar_colores():
+        oscuro = pag.theme_mode == ft.ThemeMode.DARK
+        pag.bgcolor = ft.Colors.GREY_900 if oscuro else ft.Colors.GREY_100
+        panel_form.bgcolor = ft.Colors.GREY_800 if oscuro else ft.Colors.WHITE
+        rail.bgcolor = "#212121" if oscuro else ft.Colors.GREY_200
+
     def alternar_tema(e):
         pag.theme_mode = (
             ft.ThemeMode.DARK
@@ -82,6 +96,7 @@ def main(pag: ft.Page) -> None:
             if pag.theme_mode == ft.ThemeMode.LIGHT
             else ft.Icons.LIGHT_MODE
         )
+        _aplicar_colores()
         pag.update()
 
     btn_tema = ft.IconButton(
@@ -91,8 +106,13 @@ def main(pag: ft.Page) -> None:
     )
 
     pag.appbar = ft.AppBar(
-        title=ft.Text("Gestor de Gastos Personales", theme_style=ft.TextThemeStyle.TITLE_LARGE),
+        title=ft.Text(
+            "Gestor de Gastos Personales",
+            theme_style=ft.TextThemeStyle.TITLE_LARGE,
+            color=ft.Colors.WHITE,
+        ),
         center_title=False,
+        bgcolor=ft.Colors.TEAL_700,
         actions=[btn_tema],
     )
 
@@ -100,6 +120,7 @@ def main(pag: ft.Page) -> None:
         selected_index=0,
         label_type=ft.NavigationRailLabelType.ALL,
         min_width=100,
+        bgcolor=ft.Colors.GREY_200,
         destinations=[
             ft.NavigationRailDestination(
                 icon=ft.Icons.LIST_ALT_OUTLINED,
