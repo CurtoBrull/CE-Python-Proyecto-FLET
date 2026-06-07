@@ -96,6 +96,24 @@ python -c "import psycopg2; print(psycopg2.__version__)"
 python main.py
 ```
 
+### 5. Ver la app en el móvil Android
+
+Flet permite previsualizar la app en un dispositivo Android sin compilar ni generar un APK.
+
+**Requisitos:**
+- Móvil y PC en la **misma red WiFi**
+- App **Flet** instalada en el móvil (Google Play Store → "Flet")
+
+**Ejecutar:**
+
+```powershell
+flet run --android main.py
+```
+
+Aparecerá un **código QR en la terminal**. Ábrelo con la app Flet del móvil y la app se cargará en tiempo real.
+
+> Cualquier cambio que guardes en el código se recargará automáticamente en el móvil mientras el servidor esté activo.
+
 ---
 
 ## Plan de construcción paso a paso
@@ -146,7 +164,7 @@ python main.py
 
 ```python
 ft.Text("Hola")                    # Texto estático
-ft.ElevatedButton("Click")         # Botón con relieve
+ft.Button("Click")         # Botón con relieve
 ft.TextField(label="Nombre")       # Campo de texto
 ft.Column([control1, control2])    # Apila controles en vertical
 ft.Row([control1, control2])       # Apila controles en horizontal
@@ -161,7 +179,7 @@ Los eventos se pasan como funciones (callbacks):
 def al_pulsar(e):          # e = evento, contiene info del click
     print("pulsado")
 
-ft.ElevatedButton("Click", on_click=al_pulsar)
+ft.Button("Click", on_click=al_pulsar)
 ```
 
 `e` tiene propiedades útiles:
@@ -200,7 +218,7 @@ def main(page: ft.Page) -> None:
             controls=[
                 ft.Text("Gestor de Gastos Personales", size=30, weight=ft.FontWeight.BOLD),
                 ft.Text("Bienvenido. La app está en construcción.", size=16),
-                ft.ElevatedButton("Pulsa aquí", on_click=al_pulsar),
+                ft.Button("Pulsa aquí", on_click=al_pulsar),
                 contador,
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
@@ -654,7 +672,7 @@ def crear_formulario(page: ft.Page, on_guardado) -> ft.Column:
                 label="Descripción (opcional)",
                 width=300,
             ),
-            ft.ElevatedButton("Guardar", on_click=guardar, width=300),
+            ft.Button("Guardar", on_click=guardar, width=300),
         ],
         spacing=16,
     )

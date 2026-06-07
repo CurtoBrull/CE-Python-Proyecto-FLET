@@ -79,7 +79,7 @@ def crear_form(pag: ft.Page, on_guardado) -> ft.Column:
                 width=300,
             ),
             # ElevatedButton es un botón con sombra, se puede usar TextButton o OutlinedButton para otros estilos
-            ft.ElevatedButton(
+            ft.Button(
                 "Guardar", on_click=guardar, width=300
             ),
             estado,

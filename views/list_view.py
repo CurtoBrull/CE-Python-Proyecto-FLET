@@ -88,7 +88,7 @@ def crear_lista(pag: ft.Page, on_eliminado) -> tuple[ft.Column, callable]:
                     + [ft.dropdown.Option(key=c.value, text=c.value) for c in Categoria],
                     width=200,
                 ),
-                ft.ElevatedButton("Filtrar", on_click=al_filtrar),
+                ft.Button("Filtrar", on_click=al_filtrar),
             ], spacing=12),
             ft.Divider(),
             ft.Row([resumen]),
