@@ -45,13 +45,11 @@ def crear_grafico(pag: ft.Page) -> tuple[ft.Column, callable]:
         gastos = get_gastos_por_categoria()
         ingresos = get_ingresos_por_categoria()
 
-        # --- Gastos ---
         if gastos:
             gastos_container.content = _construir_barras(gastos, max(gastos.values()))
         else:
             gastos_container.content = ft.Text("Sin datos de gastos.", size=14)
 
-        # --- Ingresos ---
         if ingresos:
             ingresos_container.content = _construir_barras(ingresos, max(ingresos.values()))
         else:

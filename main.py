@@ -45,15 +45,30 @@ def main(pag: ft.Page) -> None:
         padding=20,
     )
 
-    area = ft.Container(content=vista_transacciones, expand=True)
+    contenido_pendiente = [None]
+
+    area = ft.Container(
+        content=vista_transacciones,
+        expand=True,
+        opacity=1,
+        animate_opacity=ft.Animation(250, ft.AnimationCurve.EASE_IN_OUT),
+    )
+
+    def on_fade_out(e):
+        if contenido_pendiente[0] is not None:
+            area.content = contenido_pendiente[0]
+            contenido_pendiente[0] = None
+            area.opacity = 1
+            pag.update()
+
+    area.on_animation_end = on_fade_out
 
     def navegar(e):
         idx = e.control.selected_index
-        if idx == 0:
-            area.content = vista_transacciones
-        else:
+        if idx == 1:
             recargar_grafico()
-            area.content = vista_grafico
+        contenido_pendiente[0] = vista_transacciones if idx == 0 else vista_grafico
+        area.opacity = 0
         pag.update()
 
     def alternar_tema(e):

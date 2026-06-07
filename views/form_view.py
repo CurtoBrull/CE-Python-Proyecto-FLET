@@ -69,10 +69,9 @@ def crear_form(pag: ft.Page, on_guardado) -> tuple[ft.Card, callable]:
         estado.color = ft.Colors.BLUE_600
         pag.update()
 
-    card = ft.Card(
-        content=ft.Container(
-            padding=24,
-            content=ft.Column(
+    contenedor = ft.Container(
+        padding=24,
+        content=ft.Column(
                 controls=[
                     ft.Text(
                         "Nueva Transacción",
@@ -112,7 +111,7 @@ def crear_form(pag: ft.Page, on_guardado) -> tuple[ft.Card, callable]:
                 ],
                 spacing=16,
             ),
-        ),
-        elevation=2,
-    )
+        )
+
+    card = ft.Card(content=contenedor, elevation=2)
     return card, cargar_transaccion
