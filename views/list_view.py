@@ -1,4 +1,6 @@
+import base64
 import csv
+import io
 from datetime import date
 from pathlib import Path
 import flet as ft
@@ -94,9 +96,18 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
     # --- Exportar CSV ---
     msg_export = ft.Text("", size=12, color=ft.Colors.GREEN_600)
 
+    def _generar_csv() -> str:
+        """Genera el contenido CSV como string."""
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(["ID", "Fecha", "Tipo", "Categoría", "Descripción", "Importe"])
+        for t in trans_actual:
+            writer.writerow([t.id, t.fecha, t.tipo.value, t.categoria.value, t.descripcion, t.importe])
+        return buf.getvalue()
+
     def al_exportar(e):
         nombre = f"transacciones_{date.today()}.csv"
-        ruta = None
+        en_escritorio = False
 
         try:
             import tkinter as tk
@@ -111,19 +122,20 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
                 title="Guardar transacciones como CSV",
             )
             root.destroy()
+            if ruta:
+                with open(ruta, "w", newline="", encoding="utf-8") as f:
+                    f.write(_generar_csv())
+                msg_export.value = f"Guardado: {Path(ruta).name}"
+                en_escritorio = True
         except Exception:
-            pass  # entorno web o sin display — usa ruta automática
+            pass
 
-        if not ruta:
-            ruta = str(Path.cwd() / nombre)
+        if not en_escritorio:
+            # Web: descarga via data URI en el navegador
+            b64 = base64.b64encode(_generar_csv().encode("utf-8")).decode()
+            pag.launch_url(f"data:text/csv;base64,{b64}")
+            msg_export.value = f"Descargando {nombre}..."
 
-        with open(ruta, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f)
-            writer.writerow(["ID", "Fecha", "Tipo", "Categoría", "Descripción", "Importe"])
-            for t in trans_actual:
-                writer.writerow([t.id, t.fecha, t.tipo.value, t.categoria.value, t.descripcion, t.importe])
-
-        msg_export.value = f"Guardado: {Path(ruta).name}"
         pag.update()
 
     cargar()
