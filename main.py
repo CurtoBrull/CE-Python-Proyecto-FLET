@@ -9,7 +9,7 @@ from views.chart_view import crear_grafico
 
 def main(pag: ft.Page) -> None:
     pag.title = "Gestor de Gastos"
-    pag.window.width = 1300
+    pag.window.width = 1500
     pag.window.height = 950
     pag.theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)
     pag.dark_theme = ft.Theme(color_scheme_seed=ft.Colors.TEAL)

@@ -1,3 +1,6 @@
+import csv
+from datetime import date
+from pathlib import Path
 import flet as ft
 from database import delete, get_filtered
 from models import TipoTransaccion, Categoria
@@ -21,8 +24,8 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
     )
 
     resumen = ft.Text("", size=14)
+    trans_actual = []  # transacciones del último cargar(), usadas para exportar
 
-    # Refs para leer los valores desde cargar() antes de que los controles existan
     mes_ref = ft.Ref[ft.Dropdown]()
     cat_ref = ft.Ref[ft.Dropdown]()
 
@@ -32,6 +35,9 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
         mes = int(mes_val) if mes_val != "0" else None
         cat = cat_val if cat_val != "todas" else None
         trans = get_filtered(mes=mes, categoria=cat)
+
+        trans_actual.clear()
+        trans_actual.extend(trans)
 
         tabla.rows.clear()
         for t in trans:
@@ -85,7 +91,42 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
         cargar()
         pag.update()
 
-    cargar()  # carga inicial — refs aún None, usa defaults (sin filtros)
+    # --- Exportar CSV ---
+    msg_export = ft.Text("", size=12, color=ft.Colors.GREEN_600)
+
+    def al_exportar(e):
+        nombre = f"transacciones_{date.today()}.csv"
+        ruta = None
+
+        try:
+            import tkinter as tk
+            from tkinter import filedialog
+            root = tk.Tk()
+            root.withdraw()
+            root.wm_attributes("-topmost", True)
+            ruta = filedialog.asksaveasfilename(
+                defaultextension=".csv",
+                filetypes=[("CSV files", "*.csv")],
+                initialfile=nombre,
+                title="Guardar transacciones como CSV",
+            )
+            root.destroy()
+        except Exception:
+            pass  # entorno web o sin display — usa ruta automática
+
+        if not ruta:
+            ruta = str(Path.cwd() / nombre)
+
+        with open(ruta, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["ID", "Fecha", "Tipo", "Categoría", "Descripción", "Importe"])
+            for t in trans_actual:
+                writer.writerow([t.id, t.fecha, t.tipo.value, t.categoria.value, t.descripcion, t.importe])
+
+        msg_export.value = f"Guardado: {Path(ruta).name}"
+        pag.update()
+
+    cargar()
 
     columna = ft.Column(
         controls=[
@@ -107,13 +148,16 @@ def crear_lista(pag: ft.Page, on_eliminado, on_editar=None) -> tuple[ft.Column, 
                     width=200,
                 ),
                 ft.Button("Filtrar", on_click=al_filtrar),
+                ft.IconButton(
+                    icon=ft.Icons.DOWNLOAD_OUTLINED,
+                    tooltip="Exportar CSV",
+                    on_click=al_exportar,
+                ),
+                msg_export,
             ], spacing=12),
             ft.Divider(),
             ft.Card(
-                content=ft.Container(
-                    content=resumen,
-                    padding=12,
-                ),
+                content=ft.Container(content=resumen, padding=12),
                 elevation=1,
             ),
             ft.Column(controls=[tabla], scroll=ft.ScrollMode.AUTO),
