@@ -700,6 +700,193 @@ Cuando lo tengas, avisa y pasamos al **Paso 5 — Lista de transacciones**.
 
 ---
 
+## Paso 5 — Lista de transacciones
+
+### Diseño de la pantalla
+
+A partir de este paso la app tendrá dos zonas en horizontal:
+
+```
+┌─────────────────┬──────────────────────────────────────┐
+│   Formulario    │   Lista de transacciones             │
+│   (350px)       │   + resumen (balance, totales)       │
+└─────────────────┴──────────────────────────────────────┘
+```
+
+Esto se logra con `ft.Row` donde el formulario tiene ancho fijo y la lista ocupa el espacio restante con `ft.Expanded`.
+
+### Controles nuevos en este paso
+
+| Control | Uso |
+|---|---|
+| `ft.DataTable` | Tabla con cabeceras y filas. Columnas = `ft.DataColumn`, filas = `ft.DataRow`, celdas = `ft.DataCell` |
+| `ft.Expanded` | Ocupa todo el espacio disponible dentro de un `Row` o `Column` |
+| `ft.Divider` | Línea separadora horizontal |
+| `ft.IconButton` | Botón con icono, sin texto |
+
+### `ft.DataTable` — estructura básica
+
+```python
+ft.DataTable(
+    columns=[
+        ft.DataColumn(ft.Text("Fecha")),
+        ft.DataColumn(ft.Text("Importe"), numeric=True),
+    ],
+    rows=[
+        ft.DataRow(cells=[
+            ft.DataCell(ft.Text("2026-06-07")),
+            ft.DataCell(ft.Text("12.50 €")),
+        ]),
+    ],
+)
+```
+
+### Tu tarea — crear `views/list_view.py`
+
+```python
+import flet as ft
+from database import get_all, delete
+from models import TipoTransaccion
+
+
+def crear_lista(page: ft.Page, on_eliminado) -> ft.Column:
+    """Devuelve la lista de transacciones con resumen como un Column."""
+
+    tabla = ft.DataTable(
+        columns=[
+            ft.DataColumn(ft.Text("Fecha")),
+            ft.DataColumn(ft.Text("Tipo")),
+            ft.DataColumn(ft.Text("Categoría")),
+            ft.DataColumn(ft.Text("Descripción")),
+            ft.DataColumn(ft.Text("Importe €"), numeric=True),
+            ft.DataColumn(ft.Text("")),
+        ],
+        rows=[],
+    )
+
+    resumen = ft.Text("", size=14)
+
+    def cargar():
+        transacciones = get_all()
+
+        tabla.rows = []
+        for t in transacciones:
+            color = ft.colors.RED_400 if t.tipo == TipoTransaccion.GASTO else ft.colors.GREEN_400
+
+            def hacer_eliminar(tran_id):
+                def eliminar(e):
+                    delete(tran_id)
+                    on_eliminado(e)
+                return eliminar
+
+            tabla.rows.append(
+                ft.DataRow(cells=[
+                    ft.DataCell(ft.Text(str(t.fecha))),
+                    ft.DataCell(ft.Text(t.tipo.value, color=color)),
+                    ft.DataCell(ft.Text(t.categoria.value)),
+                    ft.DataCell(ft.Text(t.descripcion)),
+                    ft.DataCell(ft.Text(f"{t.importe:.2f}", color=color)),
+                    ft.DataCell(ft.IconButton(
+                        icon=ft.icons.DELETE_OUTLINE,
+                        icon_color=ft.colors.RED_300,
+                        on_click=hacer_eliminar(t.id),
+                    )),
+                ])
+            )
+
+        ingresos = sum(t.importe for t in transacciones if t.tipo == TipoTransaccion.INGRESO)
+        gastos = sum(t.importe for t in transacciones if t.tipo == TipoTransaccion.GASTO)
+        balance = ingresos - gastos
+        color_balance = ft.colors.GREEN_600 if balance >= 0 else ft.colors.RED_600
+
+        resumen.value = f"Ingresos: {ingresos:.2f} €   Gastos: {gastos:.2f} €   Balance: {balance:.2f} €"
+        resumen.color = color_balance
+
+    cargar()
+
+    return ft.Column(
+        controls=[
+            ft.Text("Transacciones", size=22, weight=ft.FontWeight.BOLD),
+            ft.Divider(),
+            ft.Row([resumen]),
+            ft.Column(
+                controls=[tabla],
+                scroll=ft.ScrollMode.AUTO,
+            ),
+        ],
+        expand=True,
+        spacing=12,
+    )
+```
+
+> **Por qué `hacer_eliminar(tran_id)`** — si usaras `lambda e: delete(t.id)` directamente en el bucle, todos los botones capturarían el mismo `t` (el último del bucle). `hacer_eliminar` crea un nuevo scope por cada iteración, capturando el `id` correcto. Es el clásico problema de closures en bucles.
+
+### Actualizar `main.py`
+
+```python
+import flet as ft
+from database import init_db
+from views.form_view import create_form
+from views.list_view import crear_lista
+
+
+def main(page: ft.Page) -> None:
+    page.title = "Gestor de Gastos"
+    page.window_width = 900
+    page.window_height = 650
+    page.theme_mode = ft.ThemeMode.LIGHT
+
+    init_db()
+
+    lista_ref = ft.Ref[ft.Column]()
+
+    def refrescar(e=None):
+        # Reconstruye la lista y reemplaza el contenido
+        nueva_lista = crear_lista(page, refrescar)
+        lista_ref.current.controls = nueva_lista.controls
+        page.update()
+
+    formulario = create_form(page, refrescar)
+    lista = crear_lista(page, refrescar)
+    lista.ref = lista_ref
+
+    page.add(
+        ft.Row(
+            controls=[
+                ft.Container(content=formulario, width=350, padding=20),
+                ft.VerticalDivider(),
+                ft.Container(content=lista, expand=True, padding=20),
+            ],
+            expand=True,
+        )
+    )
+
+
+ft.app(target=main)
+```
+
+### Por qué `hacer_eliminar(tran_id)` y no lambda
+
+```python
+# MAL — todos los botones eliminan el último t.id del bucle
+ft.IconButton(on_click=lambda e: delete(t.id))
+
+# BIEN — cada botón captura su propio id
+ft.IconButton(on_click=hacer_eliminar(t.id))
+```
+
+### Comprueba que funciona
+
+- [ ] La app muestra formulario a la izquierda y lista a la derecha
+- [ ] Las transacciones existentes aparecen en la tabla
+- [ ] El resumen muestra los totales correctos
+- [ ] Al guardar una transacción nueva aparece en la lista automáticamente
+- [ ] El botón de eliminar borra la fila y actualiza el resumen
+
+Cuando lo tengas, avisa y pasamos al **Paso 6 — Filtros**.
+
+---
+
 ## Notas para la entrega
 
 - Código comentado en **español** siguiendo PEP 8

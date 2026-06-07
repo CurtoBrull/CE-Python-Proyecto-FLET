@@ -3,7 +3,7 @@ from database import insert
 from models import Transaccion, TipoTransaccion, Categoria
 
 
-def create_form(page: ft.Page, on_save) -> ft.Column:
+def crear_form(pag: ft.Page, on_guardado) -> ft.Column:
     """Devuelve el formulario de nueva transacción como un Column."""
 
     tipo_ref = ft.Ref[ft.Dropdown]()
@@ -11,21 +11,21 @@ def create_form(page: ft.Page, on_save) -> ft.Column:
     categoria_ref = ft.Ref[ft.Dropdown]()
     descripcion_ref = ft.Ref[ft.TextField]()
 
-    def save(e):
+    def guardar(e):
         # Validaciones básicas
         if not importe_ref.current.value:
             # SnackBar es un mensaje temporal que aparece en la parte inferior de la pantalla
-            page.snack_bar = ft.SnackBar(ft.Text("El importe es obligatorio"))
-            page.snack_bar.open = True
-            page.update()
+            pag.snack_bar = ft.SnackBar(ft.Text("El importe es obligatorio"))
+            pag.snack_bar.open = True
+            pag.update()
             return
 
         try:
             importe = float(importe_ref.current.value.replace(",", "."))
         except ValueError:
-            page.snack_bar = ft.SnackBar(ft.Text("El importe debe ser un número"))
-            page.snack_bar.open = True
-            page.update()
+            pag.snack_bar = ft.SnackBar(ft.Text("El importe debe ser un número"))
+            pag.snack_bar.open = True
+            pag.update()
             return
 
         tran = Transaccion(
@@ -40,16 +40,15 @@ def create_form(page: ft.Page, on_save) -> ft.Column:
         # Limpia el formulario
         importe_ref.current.value = ""
         descripcion_ref.current.value = ""
-        page.snack_bar = ft.SnackBar(ft.Text("Transacción guardada"))
-        page.snack_bar.open = True
-        on_save(
-            e
-        )  # avisa al exterior antes de update para que sus cambios entren en el mismo refresco
-        page.update()
+        pag.snack_bar = ft.SnackBar(ft.Text("Transacción guardada"))
+        pag.snack_bar.open = True
+        on_guardado(e)  # llama a refrescar en main.py
+        pag.update()
 
     return ft.Column(
         controls=[
             ft.Text("Nueva Transacción", size=22, weight=ft.FontWeight.BOLD),
+            # Dropdown es un control de selección, TextField es un campo de texto, ElevatedButton es un botón con sombra
             ft.Dropdown(
                 ref=tipo_ref,
                 label="Tipo",
@@ -80,9 +79,10 @@ def create_form(page: ft.Page, on_save) -> ft.Column:
                 label="Descripción (opcional)",
                 width=300,
             ),
+            # ElevatedButton es un botón con sombra, se puede usar TextButton o OutlinedButton para otros estilos
             ft.ElevatedButton(
-                "Guardar", on_click=save, width=300
-            ),  # ElevatedButton es un botón con sombra, se puede usar TextButton o OutlinedButton para otros estilos
+                "Guardar", on_click=guardar, width=300
+            ),
         ],
         spacing=16,
     )
