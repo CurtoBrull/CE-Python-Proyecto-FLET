@@ -12,7 +12,7 @@ Sin complicaciones, sin usuarios. Datos en **PostgreSQL serverless (Neon)**.
 | POO | Clases `Transaccion`, `CategoriaEnum`, capa `Database` |
 | Persistencia | PostgreSQL serverless en Neon con `psycopg2` |
 | Interfaz gráfica | Flet (Flutter en Python) |
-| Visualización de datos | Gráfico de barras nativo de Flet (`ft.BarChart`) |
+| Visualización de datos | Gráfico de barras custom (Containers proporcionales por categoría) |
 | Complejidad justa | CRUD + filtros + resumen estadístico. Alcanzable en 2 semanas |
 
 ---
@@ -20,11 +20,18 @@ Sin complicaciones, sin usuarios. Datos en **PostgreSQL serverless (Neon)**.
 ## Funcionalidades
 
 1. **Añadir transacción** — tipo (gasto/ingreso), importe, categoría, fecha, descripción
-2. **Listar transacciones** — tabla con scroll, orden por fecha
-3. **Filtrar** — por mes y/o categoría
-4. **Eliminar** transacción
-5. **Resumen** — total ingresos, total gastos, balance
-6. **Gráfico** — gastos por categoría (barras)
+2. **Editar transacción** — formulario pre-relleno con botón cancelar
+3. **Eliminar** transacción
+4. **Listar transacciones** — tabla con scroll y ordenación por cualquier columna
+5. **Filtrar** — por mes y/o categoría, con botón limpiar filtros
+6. **Resumen** — total ingresos, total gastos, saldo en tiempo real
+7. **Exportar CSV** — diálogo nativo en escritorio, copia manual en web
+8. **Gráficos** — barras de gastos e ingresos por categoría
+9. **Pantalla de inicio** — presentación con logo, acceso a la app e info de Flet
+10. **Documentación Flet** — 9 subsecciones explicativas con ejemplos de código
+11. **Modo oscuro/claro** — tema adaptativo con colores dinámicos
+12. **Transiciones fade** — animación suave entre todas las vistas
+13. **Publicación web** — desplegado en Render con soporte Android (Flet app)
 
 ---
 
@@ -32,15 +39,22 @@ Sin complicaciones, sin usuarios. Datos en **PostgreSQL serverless (Neon)**.
 
 ```
 flet/
-├── main.py              # Punto de entrada, app Flet
-├── database.py          # Capa de acceso a PostgreSQL (Neon)
-├── models.py            # Dataclasses / modelos de datos
+├── main.py                  # Punto de entrada, configuración y navegación
+├── database.py              # Capa de acceso a PostgreSQL (Neon)
+├── models.py                # Dataclasses y Enums (Transaccion, TipoTransaccion, Categoria)
 ├── views/
-│   ├── form_view.py     # Formulario añadir transacción
-│   ├── list_view.py     # Tabla de transacciones
-│   └── chart_view.py    # Gráfico de barras
-├── .env                 # DATABASE_URL de Neon (no subir a git)
-├── .env.example         # Plantilla sin credenciales (sí subir)
+│   ├── splash_view.py       # Pantalla de inicio/presentación
+│   ├── form_view.py         # Formulario crear/editar transacción
+│   ├── list_view.py         # Tabla con filtros, ordenación y exportar CSV
+│   ├── chart_view.py        # Gráfico de barras (gastos e ingresos)
+│   └── flet_info_view.py    # Documentación Flet con 9 subsecciones
+├── utils/
+│   └── constants.py         # Constantes compartidas (MESES, COLORES, ALTURA_MAX_GRAFICO)
+├── assets/
+│   └── favicon.png          # Icono de pestaña web y logo de la app
+├── .env                     # DATABASE_URL de Neon (no subir a git)
+├── .env.example             # Plantilla sin credenciales (sí subir)
+├── render.yaml              # Configuración de despliegue en Render
 └── requirements.txt
 ```
 
@@ -49,11 +63,12 @@ flet/
 ## Pila tecnológica
 
 - **Python 3.11+**
-- **Flet** — UI (wrapper de Flutter)
+- **Flet 0.85.2** — UI (wrapper de Flutter para Python)
 - **Neon** — PostgreSQL serverless en la nube
 - **psycopg2-binary** — driver PostgreSQL para Python
 - **python-dotenv** — gestión de credenciales (connection string)
-- **dataclasses** — modelos limpios (stdlib)
+- **dataclasses + Enum** — modelos de datos (stdlib)
+- **Render** — plataforma de despliegue web gratuita
 
 ---
 
